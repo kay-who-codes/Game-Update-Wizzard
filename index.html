@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Update Helper</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0e0f11;
+    --surface:   #161719;
+    --border:    #2a2c30;
+    --muted:     #4a4d55;
+    --subtle:    #72757f;
+    --text:      #e8eaed;
+    --dim:       #9ca0aa;
+    --accent:    #7c6af7;
+    --accent-hi: #a598ff;
+    --green:     #4caf87;
+    --amber:     #e8a838;
+    --red:       #e05c5c;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  .screen { display: none; height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── UPLOAD ── */
+  #upload-screen { flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
+
+  .logo { font-family: 'Lora', serif; font-size: 1.1rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+
+  .drop-zone { width: 100%; max-width: 480px; border: 1.5px dashed var(--border); border-radius: 16px; padding: 3.5rem 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(124,106,247,0.05); }
+  .drop-zone input { display: none; }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+  .drop-label { font-size: 1.05rem; font-weight: 500; color: var(--text); margin-bottom: 0.4rem; }
+  .drop-sub { font-size: 0.85rem; color: var(--subtle); }
+
+  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; border: none; border-radius: 8px; font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-ghost { background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-success:hover { opacity: 0.88; }
+
+  #parse-error { color: var(--red); font-size: 0.85rem; text-align: center; max-width: 440px; display: none; white-space: pre-wrap; }
+
+  /* ── SUMMARY ── */
+  #summary-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; }
+
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem 2.5rem; max-width: 460px; width: 100%; }
+  .summary-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 1.4rem; color: var(--text); }
+
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--dim); }
+  .stat-value { font-weight: 500; color: var(--text); }
+  .stat-value.accent { color: var(--accent-hi); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.amber  { color: var(--amber); }
+
+  .summary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; max-width: 460px; width: 100%; }
+
+  /* ── EDIT ── */
+  #edit-screen { flex-direction: column; position: relative; overflow: hidden; }
+
+  .progress-bar { height: 3px; background: var(--border); flex-shrink: 0; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; border-radius: 0 2px 2px 0; }
+
+  .edit-topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .progress-label { font-size: 0.82rem; color: var(--subtle); font-weight: 500; letter-spacing: 0.03em; }
+  .edit-topbar-actions { display: flex; gap: 0.6rem; }
+
+  .card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; gap: 2rem; }
+
+  .field-label { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; color: var(--accent); text-align: center; }
+
+  .card-text { font-family: 'Lora', serif; font-size: clamp(1.2rem, 2.8vw, 1.75rem); font-weight: 400; line-height: 1.55; text-align: center; color: var(--text); max-width: 680px; }
+
+  .card-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  .meta-tag { font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.65rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); color: var(--dim); }
+
+  .input-zone { width: 100%; max-width: 560px; flex-shrink: 0; }
+
+  .key-prompt { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 1.2rem 1.5rem; text-align: center; }
+  .key-question { font-size: 0.82rem; color: var(--subtle); margin-bottom: 0.8rem; font-weight: 500; }
+
+  .key-options { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .key-option { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: border-color 0.15s, background 0.15s; min-width: 70px; user-select: none; }
+  .key-option:hover { border-color: var(--accent); background: rgba(124,106,247,0.08); }
+  .key-option.selected { border-color: var(--accent); background: rgba(124,106,247,0.2); }
+  .key-num { font-size: 1.3rem; font-weight: 600; color: var(--accent-hi); line-height: 1; }
+  .key-desc { font-size: 0.72rem; color: var(--dim); white-space: nowrap; }
+
+  .typed-value { font-size: 2.4rem; font-weight: 600; color: var(--accent-hi); min-height: 3rem; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+  .range-hint { font-size: 0.78rem; color: var(--subtle); margin-top: 0.4rem; }
+
+  .keyboard-hint { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 0.75rem 1.5rem 1.2rem; flex-shrink: 0; }
+  .keyboard-hint kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 1px; }
+
+  /* ── DONE ── */
+  #done-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; text-align: center; }
+  .done-icon { font-size: 3rem; }
+  .done-title { font-family: 'Lora', serif; font-size: 1.6rem; font-weight: 600; color: var(--green); }
+  .done-sub { color: var(--dim); max-width: 380px; font-size: 0.92rem; }
+
+  .fade-enter { animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- UPLOAD -->
+<div id="upload-screen" class="screen active">
+  <div class="logo">Game Update Helper</div>
+  <label class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".js,.json">
+    <span class="drop-icon">📂</span>
+    <div class="drop-label">Drop your .js file here</div>
+    <div class="drop-sub">or click to browse</div>
+  </label>
+  <p id="parse-error"></p>
+</div>
+
+<!-- SUMMARY -->
+<div id="summary-screen" class="screen">
+  <div class="summary-card">
+    <h2>File loaded</h2>
+    <div class="stat-row"><span class="stat-label">Total objects</span><span class="stat-value" id="s-total">—</span></div>
+    <div class="stat-row"><span class="stat-label">Already complete</span><span class="stat-value green" id="s-complete">—</span></div>
+    <div class="stat-row"><span class="stat-label">Need filling</span><span class="stat-value accent" id="s-todo">—</span></div>
+    <div class="stat-row"><span class="stat-label">Fields to fill</span><span class="stat-value amber" id="s-fields">—</span></div>
+  </div>
+  <div class="summary-actions">
+    <button class="btn btn-primary" id="start-btn">Start filling →</button>
+    <button class="btn btn-ghost" id="export-btn-summary">Export as-is</button>
+  </div>
+</div>
+
+<!-- EDIT -->
+<div id="edit-screen" class="screen">
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <div class="edit-topbar">
+    <span class="progress-label" id="progress-label">0 / 0</span>
+    <div class="edit-topbar-actions">
+      <button class="btn btn-ghost" id="exit-btn">Save &amp; exit</button>
+    </div>
+  </div>
+  <div class="card-area" id="card-area"></div>
+  <div class="keyboard-hint" id="kb-hint"></div>
+</div>
+
+<!-- DONE -->
+<div id="done-screen" class="screen">
+  <div class="done-icon">✅</div>
+  <div class="done-title">All done!</div>
+  <p class="done-sub">Every object has been filled. Export your updated file below.</p>
+  <button class="btn btn-success" id="export-btn-done">⬇ Export .js file</button>
+  <button class="btn btn-ghost" id="restart-btn">Load another file</button>
+</div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────────────────────
+const KEY_ORDER = ['time', 'pertinence', 'boldness', 'spice'];
+
+const TIME_MAP = { 0: 'Anytime', 1: 'Morning', 2: 'Day', 3: 'Night' };
+
+const KEY_META = {
+  time: {
+    type: 'time', label: 'Time',
+    question: 'When is this most relevant?',
+    options: [
+      { num: 0, desc: 'Anytime' },
+      { num: 1, desc: 'Morning' },
+      { num: 2, desc: 'Day'     },
+      { num: 3, desc: 'Night'   },
+    ],
+  },
+  pertinence: { type: 'number', label: 'Pertinence', question: 'How pertinent? (0 – 9)', min: 0, max: 9 },
+  boldness:   { type: 'number', label: 'Boldness',   question: 'How bold? (0 – 9)',       min: 0, max: 9 },
+  spice:      { type: 'number', label: 'Spice',      question: 'Spice level? (0 – 9)',    min: 0, max: 9 },
+};
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  rawSource:   '',      // original file text, untouched
+  varName:     'DATA',  // detected variable name
+  entries:     [],      // [{startIdx, endIdx, obj}] — each object's char range in rawSource + parsed obj
+  queue:       [],      // [{entryIdx, key}]
+  queuePos:    0,
+  typed:       '',
+  fileName:    'data.js',
+};
+
+// ── SCREENS ────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── FILE LOADING ───────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const parseErr  = document.getElementById('parse-error');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  parseErr.style.display = 'none';
+  state.fileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      parseJS(e.target.result);
+    } catch (err) {
+      parseErr.textContent = 'Could not parse file:\n' + err.message;
+      parseErr.style.display = 'block';
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── JS PARSER ─────────────────────────────────────────────────────────────
+//
+// Strategy: find each top-level { } object literal in the array body,
+// capture its exact start/end character positions in the source string,
+// then eval() just that slice to get the parsed object.
+// This lets us reconstruct the file by splicing updated object text
+// back into the original source at the same positions.
+//
+function parseJS(src) {
+  state.rawSource = src;
+
+  // Detect variable name: const FOO = [  or  var FOO = [
+  const varMatch = src.match(/(?:const|let|var)\s+(\w+)\s*=\s*\[/);
+  if (!varMatch) throw new Error('Could not find an array declaration like `const DATA = [`');
+  state.varName = varMatch[1];
+
+  // Find the opening [ of the array
+  const arrayStart = src.indexOf('[', varMatch.index + varMatch[0].length - 1);
+  if (arrayStart === -1) throw new Error('Could not find array opening bracket `[`');
+
+  // Walk char-by-char from arrayStart+1 to find each top-level { }
+  const entries = [];
+  let i = arrayStart + 1;
+  const len = src.length;
+
+  while (i < len) {
+    // Skip whitespace, commas, newlines between entries
+    if (src[i] === ']') break; // end of array
+
+    // Skip line comments
+    if (src[i] === '/' && src[i+1] === '/') {
+      while (i < len && src[i] !== '\n') i++;
+      continue;
+    }
+    // Skip block comments
+    if (src[i] === '/' && src[i+1] === '*') {
+      i += 2;
+      while (i < len - 1 && !(src[i] === '*' && src[i+1] === '/')) i++;
+      i += 2;
+      continue;
+    }
+
+    if (src[i] === '{') {
+      // Found the start of an object literal
+      const objStart = i;
+      let depth = 0;
+      let inStr = false;
+      let strChar = '';
+
+      while (i < len) {
+        const ch = src[i];
+
+        if (inStr) {
+          if (ch === '\\') { i += 2; continue; }
+          if (ch === strChar) inStr = false;
+        } else {
+          if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; }
+          else if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) {
+              const objEnd = i; // inclusive
+              const slice = src.slice(objStart, objEnd + 1);
+              // Parse the object: wrap in parens so eval treats it as expression
+              let parsed;
+              try {
+                // eslint-disable-next-line no-eval
+                parsed = (0, eval)('(' + slice + ')');
+              } catch (e) {
+                throw new Error(`Could not evaluate object at char ${objStart}:\n${e.message}\n\nSnippet: ${slice.slice(0, 120)}`);
+              }
+              entries.push({ startIdx: objStart, endIdx: objEnd, obj: parsed });
+              i++;
+              break;
+            }
+          }
+        }
+        i++;
+      }
+      continue;
+    }
+
+    i++;
+  }
+
+  if (entries.length === 0) throw new Error('No object entries found in the array.');
+
+  state.entries = entries;
+  buildQueue();
+  showSummary();
+}
+
+// ── QUEUE ──────────────────────────────────────────────────────────────────
+function missingKeys(obj) {
+  return KEY_ORDER.filter(k => !(k in obj) || obj[k] === null || obj[k] === undefined || obj[k] === '');
+}
+
+function buildQueue() {
+  const q = [];
+  state.entries.forEach((entry, i) => {
+    missingKeys(entry.obj).forEach(k => q.push({ entryIdx: i, key: k }));
+  });
+  state.queue    = q;
+  state.queuePos = 0;
+}
+
+// ── SUMMARY ────────────────────────────────────────────────────────────────
+function showSummary() {
+  const total    = state.entries.length;
+  const todo     = state.entries.filter(e => missingKeys(e.obj).length > 0).length;
+  const complete = total - todo;
+  const fields   = state.queue.length;
+
+  document.getElementById('s-total').textContent    = total;
+  document.getElementById('s-complete').textContent = complete;
+  document.getElementById('s-todo').textContent     = todo;
+  document.getElementById('s-fields').textContent   = fields;
+
+  show('summary-screen');
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (state.queue.length === 0) { show('done-screen'); return; }
+  state.queuePos = 0;
+  show('edit-screen');
+  renderCard();
+});
+
+document.getElementById('export-btn-summary').addEventListener('click', exportJS);
+
+// ── EDIT FLOW ──────────────────────────────────────────────────────────────
+function renderCard() {
+  const area = document.getElementById('card-area');
+  const hint = document.getElementById('kb-hint');
+  state.typed = '';
+
+  if (state.queuePos >= state.queue.length) { show('done-screen'); return; }
+
+  const { entryIdx, key } = state.queue[state.queuePos];
+  const { obj } = state.entries[entryIdx];
+  const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9 };
+
+  // Progress
+  const pct = state.queue.length ? (state.queuePos / state.queue.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${state.queuePos} / ${state.queue.length}`;
+
+  const tags = [obj.category, obj.setting].filter(Boolean)
+    .map(t => `<span class="meta-tag">${esc(t)}</span>`).join('');
+
+  let inputHTML = '';
+  if (meta.type === 'time') {
+    inputHTML = `
+      <div class="key-prompt">
+        <div class="key-question">${esc(meta.question)}</div>
+        <div class="key-options">
+          ${meta.options.map(o => `
+            <div class="key-option" data-num="${o.num}" tabindex="0">
+              <span class="key-num">${o.num}</span>
+              <span class="key-desc">${o.desc}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>3</kbd> to select, or click an option.';
+  } else {
+    inputHTML = `
+      <div class="key-prompt">
+        <div class="key-question">${esc(meta.question)}</div>
+        <div class="typed-value" id="typed-display">_</div>
+        <div class="range-hint">0 – ${meta.max ?? 9}</div>
+      </div>`;
+    hint.innerHTML = 'Press a digit on your keypad to commit, or type then press <kbd>Enter</kbd>. <kbd>Backspace</kbd> clears.';
+  }
+
+  area.innerHTML = `
+    <div class="field-label fade-enter">${esc(meta.label)}</div>
+    <div class="card-text fade-enter">${esc(obj.text || '')}</div>
+    ${tags ? `<div class="card-meta fade-enter">${tags}</div>` : ''}
+    <div class="input-zone fade-enter">${inputHTML}</div>
+  `;
+
+  if (meta.type === 'time') {
+    area.querySelectorAll('.key-option').forEach(el => {
+      el.addEventListener('click', () => commitTime(parseInt(el.dataset.num)));
+    });
+  }
+}
+
+function commitTime(num) {
+  if (num < 0 || num > 3) return;
+  const { entryIdx, key } = state.queue[state.queuePos];
+  state.entries[entryIdx].obj[key] = TIME_MAP[num];
+  advance();
+}
+
+function commitNumber(val) {
+  const { entryIdx, key } = state.queue[state.queuePos];
+  const meta = KEY_META[key];
+  const n = parseInt(val);
+  if (isNaN(n) || n < (meta.min ?? 0) || n > (meta.max ?? 9)) return;
+  state.entries[entryIdx].obj[n !== undefined ? 'x' : 'x']; // dummy
+  state.entries[entryIdx].obj[key] = n;
+  advance();
+}
+
+function advance() {
+  state.queuePos++;
+  if (state.queuePos >= state.queue.length) { show('done-screen'); return; }
+  renderCard();
+}
+
+// ── KEYBOARD ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('edit-screen').classList.contains('active')) return;
+  if (state.queuePos >= state.queue.length) return;
+
+  const { key } = state.queue[state.queuePos];
+  const meta = KEY_META[key];
+
+  const isDigit = e.key >= '0' && e.key <= '9';
+  const digit = isDigit ? e.key : null;
+
+  if (meta.type === 'time') {
+    if (digit !== null) {
+      const n = parseInt(digit);
+      if (n >= 0 && n <= 3) {
+        document.querySelectorAll('.key-option').forEach(el =>
+          el.classList.toggle('selected', parseInt(el.dataset.num) === n));
+        setTimeout(() => commitTime(n), 160);
+      }
+    }
+  } else {
+    if (digit !== null) {
+      state.typed = digit;
+      const d = document.getElementById('typed-display');
+      if (d) d.textContent = state.typed;
+      setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
+    }
+    if (e.key === 'Backspace') {
+      state.typed = '';
+      const d = document.getElementById('typed-display');
+      if (d) d.textContent = '_';
+    }
+    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+  }
+});
+
+// ── EXIT ───────────────────────────────────────────────────────────────────
+document.getElementById('exit-btn').addEventListener('click', () => {
+  exportJS();
+  buildQueue(); // re-queue remaining
+  showSummary();
+});
+
+// ── EXPORT — reconstruct original source with updated objects ──────────────
+//
+// We walk the entries in reverse order (so earlier char positions aren't
+// shifted by our replacements) and splice each updated object back into
+// the raw source string.
+//
+function serializeObj(obj) {
+  // Produce a compact single-line object literal that mirrors the original style.
+  // Key order: text, category, setting, time, pertinence, spice, boldness
+  const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'pertinence', 'spice', 'boldness'];
+
+  // Collect all keys in preferred order, then any extras
+  const allKeys = [
+    ...KEY_WRITE_ORDER.filter(k => k in obj),
+    ...Object.keys(obj).filter(k => !KEY_WRITE_ORDER.includes(k)),
+  ];
+
+  const pairs = allKeys.map(k => {
+    const v = obj[k];
+    if (typeof v === 'string') return `${k}: ${JSON.stringify(v)}`;
+    if (typeof v === 'number') return `${k}: ${v}`;
+    if (typeof v === 'boolean') return `${k}: ${v}`;
+    return `${k}: ${JSON.stringify(v)}`;
+  });
+
+  return '{ ' + pairs.join(', ') + ' }';
+}
+
+function exportJS() {
+  let src = state.rawSource;
+
+  // Sort entries by startIdx descending so we can splice without shifting positions
+  const sorted = [...state.entries]
+    .map((e, i) => ({ ...e, origIdx: i }))
+    .sort((a, b) => b.startIdx - a.startIdx);
+
+  for (const entry of sorted) {
+    const newObjStr = serializeObj(entry.obj);
+    src = src.slice(0, entry.startIdx) + newObjStr + src.slice(entry.endIdx + 1);
+  }
+
+  const blob = new Blob([src], { type: 'text/javascript' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = state.fileName; // same filename as uploaded
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-btn-done').addEventListener('click', exportJS);
+document.getElementById('restart-btn').addEventListener('click', () => {
+  state = { rawSource: '', varName: 'DATA', entries: [], queue: [], queuePos: 0, typed: '', fileName: 'data.js' };
+  fileInput.value = '';
+  show('upload-screen');
+});
+
+// ── UTIL ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game Update Helper</title>
+<title>Game Update Wizzard</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -29,7 +29,6 @@
   .screen { display: none; height: 100vh; }
   .screen.active { display: flex; }
 
-  /* ── UPLOAD ── */
   #upload-screen { flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
 
   .logo { font-family: 'Lora', serif; font-size: 1.1rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
@@ -52,7 +51,6 @@
 
   #parse-error { color: var(--red); font-size: 0.85rem; text-align: center; max-width: 440px; display: none; white-space: pre-wrap; }
 
-  /* ── SUMMARY ── */
   #summary-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; }
 
   .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem 2.5rem; max-width: 460px; width: 100%; }
@@ -68,7 +66,6 @@
 
   .summary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; max-width: 460px; width: 100%; }
 
-  /* ── EDIT ── */
   #edit-screen { flex-direction: column; position: relative; overflow: hidden; }
 
   .progress-bar { height: 3px; background: var(--border); flex-shrink: 0; }
@@ -101,11 +98,11 @@
 
   .typed-value { font-size: 2.4rem; font-weight: 600; color: var(--accent-hi); min-height: 3rem; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
   .range-hint { font-size: 0.78rem; color: var(--subtle); margin-top: 0.4rem; }
+  .range-hint kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 1px; }
 
   .keyboard-hint { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 0.75rem 1.5rem 1.2rem; flex-shrink: 0; }
   .keyboard-hint kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 1px; }
 
-  /* ── DONE ── */
   #done-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; text-align: center; }
   .done-icon { font-size: 3rem; }
   .done-title { font-family: 'Lora', serif; font-size: 1.6rem; font-weight: 600; color: var(--green); }
@@ -171,7 +168,6 @@
 </div>
 
 <script>
-// ── CONSTANTS ──────────────────────────────────────────────────────────────
 const KEY_ORDER = ['time', 'pertinence', 'boldness', 'spice'];
 
 const TIME_MAP = { 0: 'Anytime', 1: 'Morning', 2: 'Day', 3: 'Night' };
@@ -187,29 +183,29 @@ const KEY_META = {
       { num: 3, desc: 'Night'   },
     ],
   },
-  pertinence: { type: 'number', label: 'Pertinence', question: 'How pertinent? (0 – 9)', min: 0, max: 9 },
-  boldness:   { type: 'number', label: 'Boldness',   question: 'How bold? (0 – 9)',       min: 0, max: 9 },
-  spice:      { type: 'number', label: 'Spice',      question: 'Spice level? (0 – 9)',    min: 0, max: 9 },
+  // -1 to 5; "-" key enters -1, digits 0-5 enter 0-5
+  pertinence: { type: 'pertinence', label: 'Pertinence', question: 'How pertinent? (−1 – 5)', min: -1, max: 5 },
+  // 1 to 10; digits 1-9 enter 1-9, "0" key enters 10
+  boldness:   { type: 'boldness',   label: 'Boldness',   question: 'How bold? (1 – 10)',       min: 1,  max: 10 },
+  // 0 to 5
+  spice:      { type: 'number',     label: 'Spice',      question: 'Spice level? (0 – 5)',     min: 0,  max: 5  },
 };
 
-// ── STATE ──────────────────────────────────────────────────────────────────
 let state = {
-  rawSource:   '',      // original file text, untouched
-  varName:     'DATA',  // detected variable name
-  entries:     [],      // [{startIdx, endIdx, obj}] — each object's char range in rawSource + parsed obj
-  queue:       [],      // [{entryIdx, key}]
-  queuePos:    0,
-  typed:       '',
-  fileName:    'data.js',
+  rawSource: '',
+  varName: 'DATA',
+  entries: [],
+  queue: [],
+  queuePos: 0,
+  typed: '',
+  fileName: 'data.js',
 };
 
-// ── SCREENS ────────────────────────────────────────────────────────────────
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// ── FILE LOADING ───────────────────────────────────────────────────────────
 const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const parseErr  = document.getElementById('parse-error');
@@ -225,90 +221,46 @@ function handleFile(file) {
   state.fileName = file.name;
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      parseJS(e.target.result);
-    } catch (err) {
-      parseErr.textContent = 'Could not parse file:\n' + err.message;
-      parseErr.style.display = 'block';
-    }
+    try { parseJS(e.target.result); }
+    catch (err) { parseErr.textContent = 'Could not parse file:\n' + err.message; parseErr.style.display = 'block'; }
   };
   reader.readAsText(file);
 }
 
-// ── JS PARSER ─────────────────────────────────────────────────────────────
-//
-// Strategy: find each top-level { } object literal in the array body,
-// capture its exact start/end character positions in the source string,
-// then eval() just that slice to get the parsed object.
-// This lets us reconstruct the file by splicing updated object text
-// back into the original source at the same positions.
-//
 function parseJS(src) {
   state.rawSource = src;
-
-  // Detect variable name: const FOO = [  or  var FOO = [
   const varMatch = src.match(/(?:const|let|var)\s+(\w+)\s*=\s*\[/);
   if (!varMatch) throw new Error('Could not find an array declaration like `const DATA = [`');
   state.varName = varMatch[1];
-
-  // Find the opening [ of the array
   const arrayStart = src.indexOf('[', varMatch.index + varMatch[0].length - 1);
   if (arrayStart === -1) throw new Error('Could not find array opening bracket `[`');
 
-  // Walk char-by-char from arrayStart+1 to find each top-level { }
   const entries = [];
   let i = arrayStart + 1;
   const len = src.length;
 
   while (i < len) {
-    // Skip whitespace, commas, newlines between entries
-    if (src[i] === ']') break; // end of array
-
-    // Skip line comments
-    if (src[i] === '/' && src[i+1] === '/') {
-      while (i < len && src[i] !== '\n') i++;
-      continue;
-    }
-    // Skip block comments
-    if (src[i] === '/' && src[i+1] === '*') {
-      i += 2;
-      while (i < len - 1 && !(src[i] === '*' && src[i+1] === '/')) i++;
-      i += 2;
-      continue;
-    }
-
+    if (src[i] === ']') break;
+    if (src[i] === '/' && src[i+1] === '/') { while (i < len && src[i] !== '\n') i++; continue; }
+    if (src[i] === '/' && src[i+1] === '*') { i += 2; while (i < len - 1 && !(src[i] === '*' && src[i+1] === '/')) i++; i += 2; continue; }
     if (src[i] === '{') {
-      // Found the start of an object literal
       const objStart = i;
-      let depth = 0;
-      let inStr = false;
-      let strChar = '';
-
+      let depth = 0, inStr = false, strChar = '';
       while (i < len) {
         const ch = src[i];
-
-        if (inStr) {
-          if (ch === '\\') { i += 2; continue; }
-          if (ch === strChar) inStr = false;
-        } else {
+        if (inStr) { if (ch === '\\') { i += 2; continue; } if (ch === strChar) inStr = false; }
+        else {
           if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; }
           else if (ch === '{') depth++;
           else if (ch === '}') {
             depth--;
             if (depth === 0) {
-              const objEnd = i; // inclusive
-              const slice = src.slice(objStart, objEnd + 1);
-              // Parse the object: wrap in parens so eval treats it as expression
+              const slice = src.slice(objStart, i + 1);
               let parsed;
-              try {
-                // eslint-disable-next-line no-eval
-                parsed = (0, eval)('(' + slice + ')');
-              } catch (e) {
-                throw new Error(`Could not evaluate object at char ${objStart}:\n${e.message}\n\nSnippet: ${slice.slice(0, 120)}`);
-              }
-              entries.push({ startIdx: objStart, endIdx: objEnd, obj: parsed });
-              i++;
-              break;
+              try { parsed = (0, eval)('(' + slice + ')'); }
+              catch (e) { throw new Error(`Could not evaluate object at char ${objStart}:\n${e.message}`); }
+              entries.push({ startIdx: objStart, endIdx: i, obj: parsed });
+              i++; break;
             }
           }
         }
@@ -316,18 +268,15 @@ function parseJS(src) {
       }
       continue;
     }
-
     i++;
   }
 
   if (entries.length === 0) throw new Error('No object entries found in the array.');
-
   state.entries = entries;
   buildQueue();
   showSummary();
 }
 
-// ── QUEUE ──────────────────────────────────────────────────────────────────
 function missingKeys(obj) {
   return KEY_ORDER.filter(k => !(k in obj) || obj[k] === null || obj[k] === undefined || obj[k] === '');
 }
@@ -337,22 +286,19 @@ function buildQueue() {
   state.entries.forEach((entry, i) => {
     missingKeys(entry.obj).forEach(k => q.push({ entryIdx: i, key: k }));
   });
-  state.queue    = q;
+  state.queue = q;
   state.queuePos = 0;
 }
 
-// ── SUMMARY ────────────────────────────────────────────────────────────────
 function showSummary() {
   const total    = state.entries.length;
   const todo     = state.entries.filter(e => missingKeys(e.obj).length > 0).length;
   const complete = total - todo;
   const fields   = state.queue.length;
-
   document.getElementById('s-total').textContent    = total;
   document.getElementById('s-complete').textContent = complete;
   document.getElementById('s-todo').textContent     = todo;
   document.getElementById('s-fields').textContent   = fields;
-
   show('summary-screen');
 }
 
@@ -365,7 +311,6 @@ document.getElementById('start-btn').addEventListener('click', () => {
 
 document.getElementById('export-btn-summary').addEventListener('click', exportJS);
 
-// ── EDIT FLOW ──────────────────────────────────────────────────────────────
 function renderCard() {
   const area = document.getElementById('card-area');
   const hint = document.getElementById('kb-hint');
@@ -377,7 +322,6 @@ function renderCard() {
   const { obj } = state.entries[entryIdx];
   const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9 };
 
-  // Progress
   const pct = state.queue.length ? (state.queuePos / state.queue.length * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${state.queuePos} / ${state.queue.length}`;
@@ -386,6 +330,7 @@ function renderCard() {
     .map(t => `<span class="meta-tag">${esc(t)}</span>`).join('');
 
   let inputHTML = '';
+
   if (meta.type === 'time') {
     inputHTML = `
       <div class="key-prompt">
@@ -399,14 +344,33 @@ function renderCard() {
         </div>
       </div>`;
     hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>3</kbd> to select, or click an option.';
+
+  } else if (meta.type === 'pertinence') {
+    inputHTML = `
+      <div class="key-prompt">
+        <div class="key-question">${esc(meta.question)}</div>
+        <div class="typed-value" id="typed-display">_</div>
+        <div class="range-hint"><kbd>−</kbd> = −1 &nbsp;|&nbsp; <kbd>0</kbd>–<kbd>5</kbd> = 0–5</div>
+      </div>`;
+    hint.innerHTML = 'Press <kbd>−</kbd> for −1, or <kbd>0</kbd>–<kbd>5</kbd> to commit instantly. <kbd>Backspace</kbd> clears.';
+
+  } else if (meta.type === 'boldness') {
+    inputHTML = `
+      <div class="key-prompt">
+        <div class="key-question">${esc(meta.question)}</div>
+        <div class="typed-value" id="typed-display">_</div>
+        <div class="range-hint"><kbd>1</kbd>–<kbd>9</kbd> = 1–9 &nbsp;|&nbsp; <kbd>0</kbd> = 10</div>
+      </div>`;
+    hint.innerHTML = 'Press <kbd>1</kbd>–<kbd>9</kbd> for 1–9, or <kbd>0</kbd> for 10. <kbd>Backspace</kbd> clears.';
+
   } else {
     inputHTML = `
       <div class="key-prompt">
         <div class="key-question">${esc(meta.question)}</div>
         <div class="typed-value" id="typed-display">_</div>
-        <div class="range-hint">0 – ${meta.max ?? 9}</div>
+        <div class="range-hint">${meta.min ?? 0} – ${meta.max ?? 9}</div>
       </div>`;
-    hint.innerHTML = 'Press a digit on your keypad to commit, or type then press <kbd>Enter</kbd>. <kbd>Backspace</kbd> clears.';
+    hint.innerHTML = 'Press a digit to commit instantly. <kbd>Backspace</kbd> clears. <kbd>Enter</kbd> confirms.';
   }
 
   area.innerHTML = `
@@ -432,10 +396,9 @@ function commitTime(num) {
 
 function commitNumber(val) {
   const { entryIdx, key } = state.queue[state.queuePos];
-  const meta = KEY_META[key];
+  const meta = KEY_META[key] || { min: 0, max: 9 };
   const n = parseInt(val);
   if (isNaN(n) || n < (meta.min ?? 0) || n > (meta.max ?? 9)) return;
-  state.entries[entryIdx].obj[n !== undefined ? 'x' : 'x']; // dummy
   state.entries[entryIdx].obj[key] = n;
   advance();
 }
@@ -446,7 +409,6 @@ function advance() {
   renderCard();
 }
 
-// ── KEYBOARD ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (!document.getElementById('edit-screen').classList.contains('active')) return;
   if (state.queuePos >= state.queue.length) return;
@@ -466,46 +428,74 @@ document.addEventListener('keydown', e => {
         setTimeout(() => commitTime(n), 160);
       }
     }
+
+  } else if (meta.type === 'pertinence') {
+    // "-" or "Subtract" key → instantly commit -1
+    if (e.key === '-' || e.key === 'Subtract') {
+      const d = document.getElementById('typed-display');
+      if (d) d.textContent = '-1';
+      setTimeout(() => commitNumber('-1'), 160);
+      return;
+    }
+    // digits 0-5 commit instantly
+    if (digit !== null) {
+      const n = parseInt(digit);
+      if (n >= 0 && n <= 5) {
+        state.typed = digit;
+        const d = document.getElementById('typed-display');
+        if (d) d.textContent = state.typed;
+        setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
+      }
+    }
+    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
+    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+
+  } else if (meta.type === 'boldness') {
+    // "0" key → 10
+    if (digit === '0') {
+      const d = document.getElementById('typed-display');
+      if (d) d.textContent = '10';
+      setTimeout(() => commitNumber('10'), 160);
+      return;
+    }
+    // digits 1-9 commit instantly
+    if (digit !== null) {
+      const n = parseInt(digit);
+      if (n >= 1 && n <= 9) {
+        state.typed = digit;
+        const d = document.getElementById('typed-display');
+        if (d) d.textContent = state.typed;
+        setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
+      }
+    }
+    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
+    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+
   } else {
+    // Generic number (spice: 0-5)
     if (digit !== null) {
       state.typed = digit;
       const d = document.getElementById('typed-display');
       if (d) d.textContent = state.typed;
       setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
     }
-    if (e.key === 'Backspace') {
-      state.typed = '';
-      const d = document.getElementById('typed-display');
-      if (d) d.textContent = '_';
-    }
+    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
     if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
   }
 });
 
-// ── EXIT ───────────────────────────────────────────────────────────────────
 document.getElementById('exit-btn').addEventListener('click', () => {
   exportJS();
-  buildQueue(); // re-queue remaining
+  buildQueue();
   showSummary();
 });
 
-// ── EXPORT — reconstruct original source with updated objects ──────────────
-//
-// We walk the entries in reverse order (so earlier char positions aren't
-// shifted by our replacements) and splice each updated object back into
-// the raw source string.
-//
 function serializeObj(obj) {
-  // Produce a compact single-line object literal that mirrors the original style.
-  // Key order: text, category, setting, time, pertinence, spice, boldness
   const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'pertinence', 'spice', 'boldness'];
-
-  // Collect all keys in preferred order, then any extras
   const allKeys = [
     ...KEY_WRITE_ORDER.filter(k => k in obj),
     ...Object.keys(obj).filter(k => !KEY_WRITE_ORDER.includes(k)),
   ];
-
   const pairs = allKeys.map(k => {
     const v = obj[k];
     if (typeof v === 'string') return `${k}: ${JSON.stringify(v)}`;
@@ -513,29 +503,20 @@ function serializeObj(obj) {
     if (typeof v === 'boolean') return `${k}: ${v}`;
     return `${k}: ${JSON.stringify(v)}`;
   });
-
   return '{ ' + pairs.join(', ') + ' }';
 }
 
 function exportJS() {
   let src = state.rawSource;
-
-  // Sort entries by startIdx descending so we can splice without shifting positions
-  const sorted = [...state.entries]
-    .map((e, i) => ({ ...e, origIdx: i }))
-    .sort((a, b) => b.startIdx - a.startIdx);
-
+  const sorted = [...state.entries].map((e, i) => ({ ...e, origIdx: i })).sort((a, b) => b.startIdx - a.startIdx);
   for (const entry of sorted) {
     const newObjStr = serializeObj(entry.obj);
     src = src.slice(0, entry.startIdx) + newObjStr + src.slice(entry.endIdx + 1);
   }
-
   const blob = new Blob([src], { type: 'text/javascript' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href     = url;
-  a.download = state.fileName; // same filename as uploaded
-  a.click();
+  a.href = url; a.download = state.fileName; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -546,10 +527,8 @@ document.getElementById('restart-btn').addEventListener('click', () => {
   show('upload-screen');
 });
 
-// ── UTIL ───────────────────────────────────────────────────────────────────
 function esc(s) {
-  return String(s ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>

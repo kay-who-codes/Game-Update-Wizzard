@@ -1,560 +1,617 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game Update Wizard</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Game Data Wizard · Stats‑rich editor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg:        #0e0f11;
-    --surface:   #161719;
-    --border:    #2a2c30;
-    --muted:     #4a4d55;
-    --subtle:    #72757f;
-    --text:      #e8eaed;
-    --dim:       #9ca0aa;
-    --accent:    #7c6af7;
-    --accent-hi: #a598ff;
-    --green:     #4caf87;
-    --amber:     #e8a838;
-    --red:       #e05c5c;
+    :root {
+      --bg:        #0b0c0e;
+      --surface:   #181a1d;
+      --border:    #2c2f34;
+      --muted:     #4f535b;
+      --subtle:    #787c86;
+      --text:      #e9eaed;
+      --dim:       #9da0a9;
+      --accent:    #7c6af7;
+      --accent-hi: #b3a8ff;
+      --green:     #4caf87;
+      --amber:     #e8a838;
+      --red:       #e05c5c;
+      --blue:      #5b9bd5;
 
-    --label-time:       #fffb22;
-    --label-boldness:   #ff2020;
-    --label-pertinence: #3df2ff;
-    --label-spice:      #b458ff;
-  }
+      --label-time:       #ffe45c;
+      --label-boldness:   #ff3b3b;
+      --label-pertinence: #47e6ff;
+      --label-spice:      #ca7aff;
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+      --radius-card: 18px;
+      --radius-btn: 10px;
+    }
 
-  .screen { display: none; height: 100vh; }
-  .screen.active { display: flex; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 
-  #upload-screen { flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
+    .screen { display: none; height: 100vh; overflow-y: auto; }
+    .screen.active { display: flex; }
 
-  .logo { font-family: 'Lora', serif; font-size: 1.1rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+    /* ---------- UPLOAD ---------- */
+    #upload-screen { flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; text-align: center; }
+    .logo { font-family: 'Lora', serif; font-size: 1.2rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); }
+    .drop-zone { width: 100%; max-width: 480px; border: 2px dashed var(--border); border-radius: var(--radius-card); padding: 3rem 2rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: transparent; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(124,106,247,0.06); }
+    .drop-zone input { display: none; }
+    .drop-icon { font-size: 2.8rem; margin-bottom: 1rem; display: block; filter: grayscale(0.4); }
+    .drop-label { font-size: 1.1rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text); }
+    .drop-sub { font-size: 0.85rem; color: var(--subtle); }
+    #parse-error { color: var(--red); font-size: 0.85rem; max-width: 460px; display: none; white-space: pre-wrap; margin-top: 0.5rem; }
 
-  .drop-zone { width: 100%; max-width: 480px; border: 1.5px dashed var(--border); border-radius: 16px; padding: 3.5rem 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
-  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(124,106,247,0.05); }
-  .drop-zone input { display: none; }
-  .drop-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
-  .drop-label { font-size: 1.05rem; font-weight: 500; color: var(--text); margin-bottom: 0.4rem; }
-  .drop-sub { font-size: 0.85rem; color: var(--subtle); }
+    /* ---------- BUTTONS ---------- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.7rem 1.6rem; border: none; border-radius: var(--radius-btn); font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: transparent; font-weight: 600; }
+    .btn-primary:hover { opacity: 0.9; background: var(--accent); }
+    .btn-ghost { background: transparent; border-color: var(--border); color: var(--dim); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+    .btn-success { background: var(--green); color: #fff; border-color: transparent; font-weight: 600; }
+    .btn-success:hover { opacity: 0.9; }
 
-  .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; border: none; border-radius: 8px; font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
-  .btn:active { transform: scale(0.97); }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { opacity: 0.88; }
-  .btn-ghost { background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
-  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
-  .btn-success { background: var(--green); color: #fff; }
-  .btn-success:hover { opacity: 0.88; }
+    /* ---------- SUMMARY SCREEN ---------- */
+    #summary-screen { flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 2rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 2rem 2.2rem; max-width: 500px; width: 100%; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+    .summary-card h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .stat-grid { display: flex; flex-direction: column; gap: 0.7rem; }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--dim); display: flex; align-items: center; gap: 0.35rem; }
+    .stat-value { font-weight: 600; color: var(--text); }
+    .stat-value.accent { color: var(--accent-hi); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.amber  { color: var(--amber); }
+    .stat-value.blue   { color: var(--blue); }
+    .progress-bg { height: 6px; background: var(--border); border-radius: 10px; margin: 1.2rem 0 0.8rem; overflow: hidden; }
+    .progress-fg { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; transition: width 0.3s ease; }
+    .summary-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; margin-top: 0.8rem; }
 
-  #parse-error { color: var(--red); font-size: 0.85rem; text-align: center; max-width: 440px; display: none; white-space: pre-wrap; }
+    /* ---------- EDIT SCREEN ---------- */
+    #edit-screen { flex-direction: column; position: relative; overflow: hidden; }
+    .progress-bar { height: 4px; background: var(--border); flex-shrink: 0; }
+    .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.25s ease; border-radius: 0 4px 4px 0; }
 
-  #summary-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; }
+    .edit-topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
+    .progress-label { font-size: 0.8rem; color: var(--subtle); font-weight: 500; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .mini-stat { background: var(--surface); padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.7rem; border: 1px solid var(--border); color: var(--dim); }
+    .mini-stat span { font-weight: 600; color: var(--text); }
+    .edit-topbar-actions { display: flex; gap: 0.5rem; }
 
-  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem 2.5rem; max-width: 460px; width: 100%; }
-  .summary-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 1.4rem; color: var(--text); }
+    .card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.8rem 1.5rem; gap: 1.8rem; overflow-y: auto; }
 
-  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-  .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: var(--dim); }
-  .stat-value { font-weight: 500; color: var(--text); }
-  .stat-value.accent { color: var(--accent-hi); }
-  .stat-value.green  { color: var(--green); }
-  .stat-value.amber  { color: var(--amber); }
+    .field-label { font-size: 2rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; text-align: center; }
+    .field-label.label-time       { color: var(--label-time); }
+    .field-label.label-boldness   { color: var(--label-boldness); }
+    .field-label.label-pertinence { color: var(--label-pertinence); }
+    .field-label.label-spice      { color: var(--label-spice); }
 
-  .summary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; max-width: 460px; width: 100%; }
+    .card-text { font-family: 'Lora', serif; font-size: clamp(1.2rem, 2.8vw, 1.8rem); font-weight: 400; line-height: 1.6; text-align: center; color: var(--text); max-width: 700px; }
 
-  #edit-screen { flex-direction: column; position: relative; overflow: hidden; }
+    .card-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .meta-tag { font-size: 0.7rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); color: var(--dim); }
 
-  .progress-bar { height: 3px; background: var(--border); flex-shrink: 0; }
-  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; border-radius: 0 2px 2px 0; }
+    .input-zone { width: 100%; max-width: 580px; flex-shrink: 0; }
 
-  .edit-topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .progress-label { font-size: 0.82rem; color: var(--subtle); font-weight: 500; letter-spacing: 0.03em; }
-  .edit-topbar-actions { display: flex; gap: 0.6rem; }
+    .key-prompt { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 1.4rem 1.5rem; text-align: center; }
+    .key-question { font-size: 0.8rem; color: var(--subtle); margin-bottom: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .key-options { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+    .key-option { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.6rem 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: all 0.15s; min-width: 75px; user-select: none; }
+    .key-option:hover { border-color: var(--accent); background: rgba(124,106,247,0.1); }
+    .key-option.selected { border-color: var(--accent); background: rgba(124,106,247,0.25); }
+    .key-num { font-size: 1.4rem; font-weight: 600; color: var(--accent-hi); line-height: 1; }
+    .key-desc { font-size: 0.7rem; color: var(--dim); white-space: nowrap; }
 
-  .card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; gap: 2rem; }
+    .typed-value { font-size: 2.5rem; font-weight: 600; color: var(--accent-hi); min-height: 3rem; letter-spacing: 0.05em; }
+    .range-hint { font-size: 0.75rem; color: var(--subtle); margin-top: 0.4rem; }
+    .range-hint kbd, .keyboard-hint kbd { display: inline-block; padding: 0.1rem 0.5rem; border: 1px solid var(--border); border-radius: 5px; font-size: 0.7rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 2px; }
 
-  .field-label {
-    font-size: 1.9rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-weight: 700;
-    text-align: center;
-  }
-  .field-label.label-time       { color: var(--label-time); }
-  .field-label.label-boldness   { color: var(--label-boldness); }
-  .field-label.label-pertinence { color: var(--label-pertinence); }
-  .field-label.label-spice      { color: var(--label-spice); }
+    .keyboard-hint { font-size: 0.72rem; color: var(--muted); text-align: center; padding: 0.6rem 1.5rem 1rem; flex-shrink: 0; background: var(--bg); border-top: 1px solid var(--border); }
 
-  .card-text { font-family: 'Lora', serif; font-size: clamp(1.2rem, 2.8vw, 1.75rem); font-weight: 400; line-height: 1.55; text-align: center; color: var(--text); max-width: 680px; }
+    /* ---------- DONE SCREEN ---------- */
+    #done-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; text-align: center; }
+    .done-icon { font-size: 3.2rem; }
+    .done-title { font-family: 'Lora', serif; font-size: 1.8rem; font-weight: 600; color: var(--green); }
+    .done-stats { background: var(--surface); border-radius: 16px; padding: 1.2rem 2rem; display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; border: 1px solid var(--border); }
+    .done-stat-item { text-align: center; }
+    .done-stat-item .val { font-size: 1.4rem; font-weight: 600; }
+    .done-stat-item .lbl { font-size: 0.7rem; color: var(--dim); text-transform: uppercase; }
+    .done-sub { color: var(--dim); max-width: 420px; font-size: 0.9rem; }
 
-  .card-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
-  .meta-tag { font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.65rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); color: var(--dim); }
+    .fade-enter { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  .input-zone { width: 100%; max-width: 560px; flex-shrink: 0; }
-
-  .key-prompt { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 1.2rem 1.5rem; text-align: center; }
-  .key-question { font-size: 0.82rem; color: var(--subtle); margin-bottom: 0.8rem; font-weight: 500; }
-
-  .key-options { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-  .key-option { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: border-color 0.15s, background 0.15s; min-width: 70px; user-select: none; }
-  .key-option:hover { border-color: var(--accent); background: rgba(124,106,247,0.08); }
-  .key-option.selected { border-color: var(--accent); background: rgba(124,106,247,0.2); }
-  .key-num { font-size: 1.3rem; font-weight: 600; color: var(--accent-hi); line-height: 1; }
-  .key-desc { font-size: 0.72rem; color: var(--dim); white-space: nowrap; }
-
-  .typed-value { font-size: 2.4rem; font-weight: 600; color: var(--accent-hi); min-height: 3rem; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
-  .range-hint { font-size: 0.78rem; color: var(--subtle); margin-top: 0.4rem; }
-  .range-hint kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 1px; }
-
-  .keyboard-hint { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 0.75rem 1.5rem 1.2rem; flex-shrink: 0; }
-  .keyboard-hint kbd { display: inline-block; padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem; font-family: inherit; background: var(--surface); color: var(--dim); margin: 0 1px; }
-
-  #done-screen { flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; text-align: center; }
-  .done-icon { font-size: 3rem; }
-  .done-title { font-family: 'Lora', serif; font-size: 1.6rem; font-weight: 600; color: var(--green); }
-  .done-sub { color: var(--dim); max-width: 380px; font-size: 0.92rem; }
-
-  .fade-enter { animation: fadeIn 0.2s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-</style>
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  </style>
 </head>
 <body>
 
-<!-- UPLOAD -->
+<!-- UPLOAD SCREEN -->
 <div id="upload-screen" class="screen active">
-  <div class="logo">Game Update Helper</div>
+  <div class="logo">⚡ Game Update Wizard</div>
   <label class="drop-zone" id="drop-zone">
     <input type="file" id="file-input" accept=".js,.json">
     <span class="drop-icon">📂</span>
-    <div class="drop-label">Drop your .js file here</div>
-    <div class="drop-sub">or click to browse</div>
+    <div class="drop-label">Drop your <strong>data.js</strong> here</div>
+    <div class="drop-sub">or click to browse · array of objects expected</div>
   </label>
   <p id="parse-error"></p>
+  <div style="font-size:0.75rem; color:var(--muted); margin-top:1rem;">Supported fields: time, boldness, pertinence, spice</div>
 </div>
 
-<!-- SUMMARY -->
+<!-- SUMMARY SCREEN -->
 <div id="summary-screen" class="screen">
   <div class="summary-card">
-    <h2>File loaded</h2>
-    <div class="stat-row"><span class="stat-label">Total objects</span><span class="stat-value" id="s-total">—</span></div>
-    <div class="stat-row"><span class="stat-label">Already complete</span><span class="stat-value green" id="s-complete">—</span></div>
-    <div class="stat-row"><span class="stat-label">Need filling</span><span class="stat-value accent" id="s-todo">—</span></div>
-    <div class="stat-row"><span class="stat-label">Fields to fill</span><span class="stat-value amber" id="s-fields">—</span></div>
+    <h2>📋 File analysis</h2>
+    <div class="stat-grid">
+      <div class="stat-row"><span class="stat-label">📦 Total objects</span><span class="stat-value" id="s-total">—</span></div>
+      <div class="stat-row"><span class="stat-label">✅ Already complete</span><span class="stat-value green" id="s-complete">—</span></div>
+      <div class="stat-row"><span class="stat-label">⏳ Need filling</span><span class="stat-value accent" id="s-todo">—</span></div>
+      <div class="stat-row"><span class="stat-label">🧩 Missing fields</span><span class="stat-value amber" id="s-fields">—</span></div>
+      <div class="stat-row"><span class="stat-label">📊 Completion</span><span class="stat-value blue" id="s-pct">—</span></div>
+    </div>
+    <div class="progress-bg"><div class="progress-fg" id="summary-progress"></div></div>
   </div>
   <div class="summary-actions">
-    <button class="btn btn-primary" id="start-btn">Start filling →</button>
-    <button class="btn btn-ghost" id="export-btn-summary">Export as-is</button>
+    <button class="btn btn-primary" id="start-btn">▶ Start filling</button>
+    <button class="btn btn-ghost" id="export-btn-summary">⬇ Export as-is</button>
   </div>
 </div>
 
-<!-- EDIT -->
+<!-- EDIT SCREEN -->
 <div id="edit-screen" class="screen">
   <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
   <div class="edit-topbar">
-    <span class="progress-label" id="progress-label">0 / 0</span>
+    <span class="progress-label" id="progress-label">
+      <span id="edit-counter">0 / 0</span>
+      <span class="mini-stat">📈 <span id="edit-global-pct">0%</span> done</span>
+    </span>
     <div class="edit-topbar-actions">
-      <button class="btn btn-ghost" id="exit-btn">Save &amp; exit</button>
+      <button class="btn btn-ghost" id="exit-btn">💾 Save & exit</button>
     </div>
   </div>
   <div class="card-area" id="card-area"></div>
   <div class="keyboard-hint" id="kb-hint"></div>
 </div>
 
-<!-- DONE -->
+<!-- DONE SCREEN -->
 <div id="done-screen" class="screen">
-  <div class="done-icon">✅</div>
-  <div class="done-title">All done!</div>
-  <p class="done-sub">Every object has been filled. Export your updated file below.</p>
+  <div class="done-icon">🏁</div>
+  <div class="done-title">All objects filled!</div>
+  <div class="done-stats">
+    <div class="done-stat-item"><div class="val green" id="done-total">0</div><div class="lbl">objects</div></div>
+    <div class="done-stat-item"><div class="val accent" id="done-fields">0</div><div class="lbl">fields set</div></div>
+    <div class="done-stat-item"><div class="val blue" id="done-pct">100%</div><div class="lbl">complete</div></div>
+  </div>
+  <p class="done-sub">Your updated file is ready. Export or start over.</p>
   <button class="btn btn-success" id="export-btn-done">⬇ Export .js file</button>
-  <button class="btn btn-ghost" id="restart-btn">Load another file</button>
+  <button class="btn btn-ghost" id="restart-btn">🔄 Load another file</button>
 </div>
 
 <script>
-// ORDER: time → boldness → pertinence → spice
-const KEY_ORDER = ['time', 'boldness', 'pertinence', 'spice'];
+  (function() {
+    // ----- CONSTANTS & ORDER -----
+    const KEY_ORDER = ['time', 'boldness', 'pertinence', 'spice'];
+    const TIME_MAP = { 0: 'Anytime', 1: 'Morning', 2: 'Day', 3: 'Night' };
 
-const TIME_MAP = { 0: 'Anytime', 1: 'Morning', 2: 'Day', 3: 'Night' };
+    const KEY_META = {
+      time: {
+        type: 'time', label: 'Time',
+        question: 'When is this most relevant?',
+        options: [
+          { num: 0, desc: 'Anytime' },
+          { num: 1, desc: 'Morning' },
+          { num: 2, desc: 'Day' },
+          { num: 3, desc: 'Night' },
+        ],
+        labelClass: 'label-time',
+      },
+      boldness: {
+        type: 'boldness', label: 'Boldness',
+        question: 'How bold? (0 – 5)',
+        min: 0, max: 5,
+        labelClass: 'label-boldness',
+      },
+      pertinence: {
+        type: 'pertinence', label: 'Pertinence',
+        question: 'How pertinent? (−1 – 5)',
+        min: -1, max: 5,
+        labelClass: 'label-pertinence',
+      },
+      spice: {
+        type: 'number', label: 'Spice',
+        question: 'Spice level? (0 – 5)',
+        min: 0, max: 5,
+        labelClass: 'label-spice',
+      },
+    };
 
-const KEY_META = {
-  time: {
-    type: 'time', label: 'Time',
-    question: 'When is this most relevant?',
-    options: [
-      { num: 0, desc: 'Anytime' },
-      { num: 1, desc: 'Morning' },
-      { num: 2, desc: 'Day'     },
-      { num: 3, desc: 'Night'   },
-    ],
-    labelClass: 'label-time',
-  },
-  // 0 to 5
-  boldness: {
-    type: 'boldness', label: 'Boldness',
-    question: 'How bold? (0 – 5)',
-    min: 0, max: 5,
-    labelClass: 'label-boldness',
-  },
-  // -1 to 5; "-" key enters -1, digits 0-5 enter 0-5
-  pertinence: {
-    type: 'pertinence', label: 'Pertinence',
-    question: 'How pertinent? (−1 – 5)',
-    min: -1, max: 5,
-    labelClass: 'label-pertinence',
-  },
-  // 0 to 5
-  spice: {
-    type: 'number', label: 'Spice',
-    question: 'Spice level? (0 – 5)',
-    min: 0, max: 5,
-    labelClass: 'label-spice',
-  },
-};
+    // ----- STATE -----
+    let state = {
+      rawSource: '',
+      varName: 'DATA',
+      entries: [],          // { startIdx, endIdx, obj }
+      queue: [],            // { entryIdx, key }
+      queuePos: 0,
+      typed: '',
+      fileName: 'data.js',
+    };
 
-let state = {
-  rawSource: '',
-  varName: 'DATA',
-  entries: [],
-  queue: [],
-  queuePos: 0,
-  typed: '',
-  fileName: 'data.js',
-};
+    // ----- DOM ELEMENTS -----
+    const screens = {
+      upload:  document.getElementById('upload-screen'),
+      summary: document.getElementById('summary-screen'),
+      edit:    document.getElementById('edit-screen'),
+      done:    document.getElementById('done-screen'),
+    };
 
-function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+    function show(screenId) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[screenId].classList.add('active');
+    }
 
-const dropZone  = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const parseErr  = document.getElementById('parse-error');
+    // ----- UTILS -----
+    const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+    function missingKeys(obj) {
+      return KEY_ORDER.filter(k => !(k in obj) || obj[k] === null || obj[k] === undefined || obj[k] === '');
+    }
 
-function handleFile(file) {
-  if (!file) return;
-  parseErr.style.display = 'none';
-  state.fileName = file.name;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try { parseJS(e.target.result); }
-    catch (err) { parseErr.textContent = 'Could not parse file:\n' + err.message; parseErr.style.display = 'block'; }
-  };
-  reader.readAsText(file);
-}
+    function countMissingFields() {
+      return state.entries.reduce((sum, e) => sum + missingKeys(e.obj).length, 0);
+    }
 
-function parseJS(src) {
-  state.rawSource = src;
-  const varMatch = src.match(/(?:const|let|var)\s+(\w+)\s*=\s*\[/);
-  if (!varMatch) throw new Error('Could not find an array declaration like `const DATA = [`');
-  state.varName = varMatch[1];
-  const arrayStart = src.indexOf('[', varMatch.index + varMatch[0].length - 1);
-  if (arrayStart === -1) throw new Error('Could not find array opening bracket `[`');
+    function totalFieldsPossible() {
+      return state.entries.length * KEY_ORDER.length;
+    }
 
-  const entries = [];
-  let i = arrayStart + 1;
-  const len = src.length;
+    function globalCompletionPercent() {
+      const totalPossible = totalFieldsPossible();
+      if (totalPossible === 0) return 100;
+      const missing = countMissingFields();
+      return Math.round(((totalPossible - missing) / totalPossible) * 100);
+    }
 
-  while (i < len) {
-    if (src[i] === ']') break;
-    if (src[i] === '/' && src[i+1] === '/') { while (i < len && src[i] !== '\n') i++; continue; }
-    if (src[i] === '/' && src[i+1] === '*') { i += 2; while (i < len - 1 && !(src[i] === '*' && src[i+1] === '/')) i++; i += 2; continue; }
-    if (src[i] === '{') {
-      const objStart = i;
-      let depth = 0, inStr = false, strChar = '';
+    function buildQueue() {
+      const q = [];
+      state.entries.forEach((entry, i) => {
+        missingKeys(entry.obj).forEach(k => q.push({ entryIdx: i, key: k }));
+      });
+      state.queue = q;
+      state.queuePos = 0;
+    }
+
+    // ----- RENDER HELPERS -----
+    function updateSummaryScreen() {
+      const total = state.entries.length;
+      const todo = state.entries.filter(e => missingKeys(e.obj).length > 0).length;
+      const complete = total - todo;
+      const fields = state.queue.length;
+      const pct = total ? Math.round((complete / total) * 100) : 0;
+
+      document.getElementById('s-total').textContent = total;
+      document.getElementById('s-complete').textContent = complete;
+      document.getElementById('s-todo').textContent = todo;
+      document.getElementById('s-fields').textContent = fields;
+      document.getElementById('s-pct').textContent = pct + '%';
+      document.getElementById('summary-progress').style.width = pct + '%';
+    }
+
+    function updateDoneStats() {
+      document.getElementById('done-total').textContent = state.entries.length;
+      document.getElementById('done-fields').textContent = totalFieldsPossible() - countMissingFields();
+      document.getElementById('done-pct').textContent = globalCompletionPercent() + '%';
+    }
+
+    // ----- FILE HANDLING -----
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const parseErr = document.getElementById('parse-error');
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+    function handleFile(file) {
+      if (!file) return;
+      parseErr.style.display = 'none';
+      state.fileName = file.name;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try { parseJS(e.target.result); }
+        catch (err) { parseErr.textContent = '❌ Could not parse file:\n' + err.message; parseErr.style.display = 'block'; }
+      };
+      reader.readAsText(file);
+    }
+
+    function parseJS(src) {
+      state.rawSource = src;
+      const varMatch = src.match(/(?:const|let|var)\s+(\w+)\s*=\s*\[/);
+      if (!varMatch) throw new Error('Could not find an array declaration like `const DATA = [`');
+      state.varName = varMatch[1];
+      const arrayStart = src.indexOf('[', varMatch.index + varMatch[0].length - 1);
+      if (arrayStart === -1) throw new Error('Could not find array opening bracket `[`');
+
+      const entries = [];
+      let i = arrayStart + 1;
+      const len = src.length;
+
       while (i < len) {
-        const ch = src[i];
-        if (inStr) { if (ch === '\\') { i += 2; continue; } if (ch === strChar) inStr = false; }
-        else {
-          if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; }
-          else if (ch === '{') depth++;
-          else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-              const slice = src.slice(objStart, i + 1);
-              let parsed;
-              try { parsed = (0, eval)('(' + slice + ')'); }
-              catch (e) { throw new Error(`Could not evaluate object at char ${objStart}:\n${e.message}`); }
-              entries.push({ startIdx: objStart, endIdx: i, obj: parsed });
-              i++; break;
+        if (src[i] === ']') break;
+        if (src[i] === '/' && src[i+1] === '/') { while (i < len && src[i] !== '\n') i++; continue; }
+        if (src[i] === '/' && src[i+1] === '*') { i += 2; while (i < len - 1 && !(src[i] === '*' && src[i+1] === '/')) i++; i += 2; continue; }
+        if (src[i] === '{') {
+          const objStart = i;
+          let depth = 0, inStr = false, strChar = '';
+          while (i < len) {
+            const ch = src[i];
+            if (inStr) { if (ch === '\\') { i += 2; continue; } if (ch === strChar) inStr = false; }
+            else {
+              if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; }
+              else if (ch === '{') depth++;
+              else if (ch === '}') {
+                depth--;
+                if (depth === 0) {
+                  const slice = src.slice(objStart, i + 1);
+                  let parsed;
+                  try { parsed = (0, eval)('(' + slice + ')'); }
+                  catch (e) { throw new Error(`Could not evaluate object at char ${objStart}:\n${e.message}`); }
+                  entries.push({ startIdx: objStart, endIdx: i, obj: parsed });
+                  i++; break;
+                }
+              }
             }
+            i++;
           }
+          continue;
         }
         i++;
       }
-      continue;
+
+      if (entries.length === 0) throw new Error('No object entries found in the array.');
+      state.entries = entries;
+      buildQueue();
+      updateSummaryScreen();
+      show('summary');
     }
-    i++;
-  }
 
-  if (entries.length === 0) throw new Error('No object entries found in the array.');
-  state.entries = entries;
-  buildQueue();
-  showSummary();
-}
+    // ----- EXPORT -----
+    function serializeObj(obj) {
+      const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'boldness', 'pertinence', 'spice'];
+      const allKeys = [
+        ...KEY_WRITE_ORDER.filter(k => k in obj),
+        ...Object.keys(obj).filter(k => !KEY_WRITE_ORDER.includes(k)),
+      ];
+      const pairs = allKeys.map(k => {
+        const v = obj[k];
+        if (typeof v === 'string') return `${k}: ${JSON.stringify(v)}`;
+        if (typeof v === 'number' || typeof v === 'boolean') return `${k}: ${v}`;
+        return `${k}: ${JSON.stringify(v)}`;
+      });
+      return '{ ' + pairs.join(', ') + ' }';
+    }
 
-function missingKeys(obj) {
-  return KEY_ORDER.filter(k => !(k in obj) || obj[k] === null || obj[k] === undefined || obj[k] === '');
-}
+    function exportJS() {
+      let src = state.rawSource;
+      const sorted = [...state.entries].map((e, i) => ({ ...e, origIdx: i })).sort((a, b) => b.startIdx - a.startIdx);
+      for (const entry of sorted) {
+        const newObjStr = serializeObj(entry.obj);
+        src = src.slice(0, entry.startIdx) + newObjStr + src.slice(entry.endIdx + 1);
+      }
+      const blob = new Blob([src], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = state.fileName; a.click();
+      URL.revokeObjectURL(url);
+    }
 
-function buildQueue() {
-  const q = [];
-  state.entries.forEach((entry, i) => {
-    missingKeys(entry.obj).forEach(k => q.push({ entryIdx: i, key: k }));
-  });
-  state.queue = q;
-  state.queuePos = 0;
-}
+    // ----- CARD RENDERING (EDIT) -----
+    function renderCard() {
+      const area = document.getElementById('card-area');
+      const hint = document.getElementById('kb-hint');
+      state.typed = '';
 
-function showSummary() {
-  const total    = state.entries.length;
-  const todo     = state.entries.filter(e => missingKeys(e.obj).length > 0).length;
-  const complete = total - todo;
-  const fields   = state.queue.length;
-  document.getElementById('s-total').textContent    = total;
-  document.getElementById('s-complete').textContent = complete;
-  document.getElementById('s-todo').textContent     = todo;
-  document.getElementById('s-fields').textContent   = fields;
-  show('summary-screen');
-}
+      if (state.queuePos >= state.queue.length) {
+        updateDoneStats();
+        show('done');
+        return;
+      }
 
-document.getElementById('start-btn').addEventListener('click', () => {
-  if (state.queue.length === 0) { show('done-screen'); return; }
-  state.queuePos = 0;
-  show('edit-screen');
-  renderCard();
-});
+      const { entryIdx, key } = state.queue[state.queuePos];
+      const { obj } = state.entries[entryIdx];
+      const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9, labelClass: '' };
 
-document.getElementById('export-btn-summary').addEventListener('click', exportJS);
+      // Update progress UI
+      const pct = state.queue.length ? (state.queuePos / state.queue.length * 100) : 0;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('edit-counter').textContent = `${state.queuePos} / ${state.queue.length}`;
+      document.getElementById('edit-global-pct').textContent = globalCompletionPercent() + '%';
 
-function renderCard() {
-  const area = document.getElementById('card-area');
-  const hint = document.getElementById('kb-hint');
-  state.typed = '';
+      const tags = [obj.category, obj.setting].filter(Boolean)
+        .map(t => `<span class="meta-tag">${esc(t)}</span>`).join('');
 
-  if (state.queuePos >= state.queue.length) { show('done-screen'); return; }
+      let inputHTML = '';
 
-  const { entryIdx, key } = state.queue[state.queuePos];
-  const { obj } = state.entries[entryIdx];
-  const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9, labelClass: '' };
+      if (meta.type === 'time') {
+        inputHTML = `
+          <div class="key-prompt">
+            <div class="key-question">${esc(meta.question)}</div>
+            <div class="key-options">
+              ${meta.options.map(o => `
+                <div class="key-option" data-num="${o.num}" tabindex="0">
+                  <span class="key-num">${o.num}</span>
+                  <span class="key-desc">${o.desc}</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>3</kbd> or click an option.';
+      } else if (meta.type === 'pertinence') {
+        inputHTML = `
+          <div class="key-prompt">
+            <div class="key-question">${esc(meta.question)}</div>
+            <div class="typed-value" id="typed-display">_</div>
+            <div class="range-hint"><kbd>−</kbd> = −1 &nbsp;|&nbsp; <kbd>0</kbd>–<kbd>5</kbd></div>
+          </div>`;
+        hint.innerHTML = 'Press <kbd>−</kbd> for −1, <kbd>0</kbd>–<kbd>5</kbd> to commit. <kbd>Backspace</kbd> clears.';
+      } else if (meta.type === 'boldness') {
+        inputHTML = `
+          <div class="key-prompt">
+            <div class="key-question">${esc(meta.question)}</div>
+            <div class="typed-value" id="typed-display">_</div>
+            <div class="range-hint"><kbd>0</kbd>–<kbd>5</kbd></div>
+          </div>`;
+        hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>5</kbd> to commit. <kbd>Backspace</kbd> clears.';
+      } else {
+        inputHTML = `
+          <div class="key-prompt">
+            <div class="key-question">${esc(meta.question)}</div>
+            <div class="typed-value" id="typed-display">_</div>
+            <div class="range-hint">${meta.min ?? 0} – ${meta.max ?? 9}</div>
+          </div>`;
+        hint.innerHTML = 'Press digit to commit. <kbd>Backspace</kbd> clears.';
+      }
 
-  const pct = state.queue.length ? (state.queuePos / state.queue.length * 100) : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('progress-label').textContent = `${state.queuePos} / ${state.queue.length}`;
+      area.innerHTML = `
+        <div class="field-label fade-enter ${esc(meta.labelClass || '')}">${esc(meta.label)}</div>
+        <div class="card-text fade-enter">${esc(obj.text || '')}</div>
+        ${tags ? `<div class="card-meta fade-enter">${tags}</div>` : ''}
+        <div class="input-zone fade-enter">${inputHTML}</div>
+      `;
 
-  const tags = [obj.category, obj.setting].filter(Boolean)
-    .map(t => `<span class="meta-tag">${esc(t)}</span>`).join('');
+      if (meta.type === 'time') {
+        area.querySelectorAll('.key-option').forEach(el => {
+          el.addEventListener('click', () => commitTime(parseInt(el.dataset.num)));
+        });
+      }
+    }
 
-  let inputHTML = '';
+    function commitTime(num) {
+      if (num < 0 || num > 3) return;
+      const { entryIdx, key } = state.queue[state.queuePos];
+      state.entries[entryIdx].obj[key] = TIME_MAP[num];
+      advance();
+    }
 
-  if (meta.type === 'time') {
-    inputHTML = `
-      <div class="key-prompt">
-        <div class="key-question">${esc(meta.question)}</div>
-        <div class="key-options">
-          ${meta.options.map(o => `
-            <div class="key-option" data-num="${o.num}" tabindex="0">
-              <span class="key-num">${o.num}</span>
-              <span class="key-desc">${o.desc}</span>
-            </div>`).join('')}
-        </div>
-      </div>`;
-    hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>3</kbd> to select, or click an option.';
+    function commitNumber(val) {
+      const { entryIdx, key } = state.queue[state.queuePos];
+      const meta = KEY_META[key] || { min: 0, max: 9 };
+      const n = parseInt(val);
+      if (isNaN(n) || n < (meta.min ?? 0) || n > (meta.max ?? 9)) return;
+      state.entries[entryIdx].obj[key] = n;
+      advance();
+    }
 
-  } else if (meta.type === 'pertinence') {
-    inputHTML = `
-      <div class="key-prompt">
-        <div class="key-question">${esc(meta.question)}</div>
-        <div class="typed-value" id="typed-display">_</div>
-        <div class="range-hint"><kbd>−</kbd> = −1 &nbsp;|&nbsp; <kbd>0</kbd>–<kbd>5</kbd> = 0–5</div>
-      </div>`;
-    hint.innerHTML = 'Press <kbd>−</kbd> for −1, or <kbd>0</kbd>–<kbd>5</kbd> to commit instantly. <kbd>Backspace</kbd> clears.';
+    function advance() {
+      state.queuePos++;
+      if (state.queuePos >= state.queue.length) {
+        updateDoneStats();
+        show('done');
+        return;
+      }
+      renderCard();
+    }
 
-  } else if (meta.type === 'boldness') {
-    inputHTML = `
-      <div class="key-prompt">
-        <div class="key-question">${esc(meta.question)}</div>
-        <div class="typed-value" id="typed-display">_</div>
-        <div class="range-hint"><kbd>0</kbd>–<kbd>5</kbd> = 0–5</div>
-      </div>`;
-    hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>5</kbd> to commit instantly. <kbd>Backspace</kbd> clears.';
+    // ----- GLOBAL KEYBOARD -----
+    document.addEventListener('keydown', e => {
+      if (!screens.edit.classList.contains('active')) return;
+      if (state.queuePos >= state.queue.length) return;
 
-  } else {
-    inputHTML = `
-      <div class="key-prompt">
-        <div class="key-question">${esc(meta.question)}</div>
-        <div class="typed-value" id="typed-display">_</div>
-        <div class="range-hint">${meta.min ?? 0} – ${meta.max ?? 9}</div>
-      </div>`;
-    hint.innerHTML = 'Press a digit to commit instantly. <kbd>Backspace</kbd> clears. <kbd>Enter</kbd> confirms.';
-  }
+      const { key } = state.queue[state.queuePos];
+      const meta = KEY_META[key];
+      const digit = (e.key >= '0' && e.key <= '9') ? e.key : null;
 
-  area.innerHTML = `
-    <div class="field-label fade-enter ${esc(meta.labelClass || '')}">${esc(meta.label)}</div>
-    <div class="card-text fade-enter">${esc(obj.text || '')}</div>
-    ${tags ? `<div class="card-meta fade-enter">${tags}</div>` : ''}
-    <div class="input-zone fade-enter">${inputHTML}</div>
-  `;
-
-  if (meta.type === 'time') {
-    area.querySelectorAll('.key-option').forEach(el => {
-      el.addEventListener('click', () => commitTime(parseInt(el.dataset.num)));
+      if (meta.type === 'time') {
+        if (digit !== null) {
+          const n = parseInt(digit);
+          if (n >= 0 && n <= 3) {
+            document.querySelectorAll('.key-option').forEach(el =>
+              el.classList.toggle('selected', parseInt(el.dataset.num) === n));
+            setTimeout(() => commitTime(n), 140);
+          }
+        }
+      } else if (meta.type === 'pertinence') {
+        if (e.key === '-' || e.key === 'Subtract') {
+          const d = document.getElementById('typed-display');
+          if (d) d.textContent = '-1';
+          setTimeout(() => commitNumber('-1'), 140);
+          return;
+        }
+        if (digit !== null) {
+          const n = parseInt(digit);
+          if (n >= 0 && n <= 5) {
+            state.typed = digit;
+            const d = document.getElementById('typed-display');
+            if (d) d.textContent = state.typed;
+            setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 100);
+          }
+        }
+        if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
+        if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+      } else if (meta.type === 'boldness') {
+        if (digit !== null) {
+          const n = parseInt(digit);
+          if (n >= 0 && n <= 5) {
+            state.typed = digit;
+            const d = document.getElementById('typed-display');
+            if (d) d.textContent = state.typed;
+            setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 100);
+          }
+        }
+        if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
+        if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+      } else {
+        if (digit !== null) {
+          state.typed = digit;
+          const d = document.getElementById('typed-display');
+          if (d) d.textContent = state.typed;
+          setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 100);
+        }
+        if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
+        if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+      }
     });
-  }
-}
 
-function commitTime(num) {
-  if (num < 0 || num > 3) return;
-  const { entryIdx, key } = state.queue[state.queuePos];
-  state.entries[entryIdx].obj[key] = TIME_MAP[num];
-  advance();
-}
-
-function commitNumber(val) {
-  const { entryIdx, key } = state.queue[state.queuePos];
-  const meta = KEY_META[key] || { min: 0, max: 9 };
-  const n = parseInt(val);
-  if (isNaN(n) || n < (meta.min ?? 0) || n > (meta.max ?? 9)) return;
-  state.entries[entryIdx].obj[key] = n;
-  advance();
-}
-
-function advance() {
-  state.queuePos++;
-  if (state.queuePos >= state.queue.length) { show('done-screen'); return; }
-  renderCard();
-}
-
-document.addEventListener('keydown', e => {
-  if (!document.getElementById('edit-screen').classList.contains('active')) return;
-  if (state.queuePos >= state.queue.length) return;
-
-  const { key } = state.queue[state.queuePos];
-  const meta = KEY_META[key];
-
-  const isDigit = e.key >= '0' && e.key <= '9';
-  const digit = isDigit ? e.key : null;
-
-  if (meta.type === 'time') {
-    if (digit !== null) {
-      const n = parseInt(digit);
-      if (n >= 0 && n <= 3) {
-        document.querySelectorAll('.key-option').forEach(el =>
-          el.classList.toggle('selected', parseInt(el.dataset.num) === n));
-        setTimeout(() => commitTime(n), 160);
+    // ----- BUTTON EVENTS -----
+    document.getElementById('start-btn').addEventListener('click', () => {
+      if (state.queue.length === 0) {
+        updateDoneStats();
+        show('done');
+        return;
       }
-    }
+      state.queuePos = 0;
+      show('edit');
+      renderCard();
+    });
 
-  } else if (meta.type === 'pertinence') {
-    // "-" or "Subtract" key → instantly commit -1
-    if (e.key === '-' || e.key === 'Subtract') {
-      const d = document.getElementById('typed-display');
-      if (d) d.textContent = '-1';
-      setTimeout(() => commitNumber('-1'), 160);
-      return;
-    }
-    // digits 0-5 commit instantly
-    if (digit !== null) {
-      const n = parseInt(digit);
-      if (n >= 0 && n <= 5) {
-        state.typed = digit;
-        const d = document.getElementById('typed-display');
-        if (d) d.textContent = state.typed;
-        setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
-      }
-    }
-    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
-    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+    document.getElementById('export-btn-summary').addEventListener('click', exportJS);
+    document.getElementById('export-btn-done').addEventListener('click', exportJS);
 
-  } else if (meta.type === 'boldness') {
-    // digits 0-5 commit instantly
-    if (digit !== null) {
-      const n = parseInt(digit);
-      if (n >= 0 && n <= 5) {
-        state.typed = digit;
-        const d = document.getElementById('typed-display');
-        if (d) d.textContent = state.typed;
-        setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
-      }
-    }
-    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
-    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
+    document.getElementById('exit-btn').addEventListener('click', () => {
+      exportJS();
+      buildQueue();
+      updateSummaryScreen();
+      show('summary');
+    });
 
-  } else {
-    // Generic number (spice: 0-5)
-    if (digit !== null) {
-      state.typed = digit;
-      const d = document.getElementById('typed-display');
-      if (d) d.textContent = state.typed;
-      setTimeout(() => { if (state.typed === digit) commitNumber(state.typed); }, 120);
-    }
-    if (e.key === 'Backspace') { state.typed = ''; const d = document.getElementById('typed-display'); if (d) d.textContent = '_'; }
-    if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
-  }
-});
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      state = { rawSource: '', varName: 'DATA', entries: [], queue: [], queuePos: 0, typed: '', fileName: 'data.js' };
+      fileInput.value = '';
+      show('upload');
+    });
 
-document.getElementById('exit-btn').addEventListener('click', () => {
-  exportJS();
-  buildQueue();
-  showSummary();
-});
-
-function serializeObj(obj) {
-  const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'boldness', 'pertinence', 'spice'];
-  const allKeys = [
-    ...KEY_WRITE_ORDER.filter(k => k in obj),
-    ...Object.keys(obj).filter(k => !KEY_WRITE_ORDER.includes(k)),
-  ];
-  const pairs = allKeys.map(k => {
-    const v = obj[k];
-    if (typeof v === 'string') return `${k}: ${JSON.stringify(v)}`;
-    if (typeof v === 'number') return `${k}: ${v}`;
-    if (typeof v === 'boolean') return `${k}: ${v}`;
-    return `${k}: ${JSON.stringify(v)}`;
-  });
-  return '{ ' + pairs.join(', ') + ' }';
-}
-
-function exportJS() {
-  let src = state.rawSource;
-  const sorted = [...state.entries].map((e, i) => ({ ...e, origIdx: i })).sort((a, b) => b.startIdx - a.startIdx);
-  for (const entry of sorted) {
-    const newObjStr = serializeObj(entry.obj);
-    src = src.slice(0, entry.startIdx) + newObjStr + src.slice(entry.endIdx + 1);
-  }
-  const blob = new Blob([src], { type: 'text/javascript' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = state.fileName; a.click();
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById('export-btn-done').addEventListener('click', exportJS);
-document.getElementById('restart-btn').addEventListener('click', () => {
-  state = { rawSource: '', varName: 'DATA', entries: [], queue: [], queuePos: 0, typed: '', fileName: 'data.js' };
-  fileInput.value = '';
-  show('upload-screen');
-});
-
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  })();
 </script>
 </body>
 </html>

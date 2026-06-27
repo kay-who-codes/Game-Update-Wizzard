@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Game Update Wizzard</title>
+<title>Game Update Wizard</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,6 +22,11 @@
     --green:     #4caf87;
     --amber:     #e8a838;
     --red:       #e05c5c;
+
+    --label-time:       #e8a838;
+    --label-boldness:   #a598ff;
+    --label-pertinence: #f0997b;
+    --label-spice:      #5dcaa5;
   }
 
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
@@ -77,7 +82,17 @@
 
   .card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem; gap: 2rem; }
 
-  .field-label { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600; color: var(--accent); text-align: center; }
+  .field-label {
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+  }
+  .field-label.label-time       { color: var(--label-time); }
+  .field-label.label-boldness   { color: var(--label-boldness); }
+  .field-label.label-pertinence { color: var(--label-pertinence); }
+  .field-label.label-spice      { color: var(--label-spice); }
 
   .card-text { font-family: 'Lora', serif; font-size: clamp(1.2rem, 2.8vw, 1.75rem); font-weight: 400; line-height: 1.55; text-align: center; color: var(--text); max-width: 680px; }
 
@@ -168,7 +183,8 @@
 </div>
 
 <script>
-const KEY_ORDER = ['time', 'pertinence', 'boldness', 'spice'];
+// ORDER: time → boldness → pertinence → spice
+const KEY_ORDER = ['time', 'boldness', 'pertinence', 'spice'];
 
 const TIME_MAP = { 0: 'Anytime', 1: 'Morning', 2: 'Day', 3: 'Night' };
 
@@ -182,13 +198,29 @@ const KEY_META = {
       { num: 2, desc: 'Day'     },
       { num: 3, desc: 'Night'   },
     ],
+    labelClass: 'label-time',
+  },
+  // 0 to 5
+  boldness: {
+    type: 'boldness', label: 'Boldness',
+    question: 'How bold? (0 – 5)',
+    min: 0, max: 5,
+    labelClass: 'label-boldness',
   },
   // -1 to 5; "-" key enters -1, digits 0-5 enter 0-5
-  pertinence: { type: 'pertinence', label: 'Pertinence', question: 'How pertinent? (−1 – 5)', min: -1, max: 5 },
-  // 1 to 10; digits 1-9 enter 1-9, "0" key enters 10
-  boldness:   { type: 'boldness',   label: 'Boldness',   question: 'How bold? (1 – 10)',       min: 1,  max: 10 },
+  pertinence: {
+    type: 'pertinence', label: 'Pertinence',
+    question: 'How pertinent? (−1 – 5)',
+    min: -1, max: 5,
+    labelClass: 'label-pertinence',
+  },
   // 0 to 5
-  spice:      { type: 'number',     label: 'Spice',      question: 'Spice level? (0 – 5)',     min: 0,  max: 5  },
+  spice: {
+    type: 'number', label: 'Spice',
+    question: 'Spice level? (0 – 5)',
+    min: 0, max: 5,
+    labelClass: 'label-spice',
+  },
 };
 
 let state = {
@@ -320,7 +352,7 @@ function renderCard() {
 
   const { entryIdx, key } = state.queue[state.queuePos];
   const { obj } = state.entries[entryIdx];
-  const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9 };
+  const meta = KEY_META[key] || { type: 'number', label: key, question: 'Enter value', min: 0, max: 9, labelClass: '' };
 
   const pct = state.queue.length ? (state.queuePos / state.queue.length * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
@@ -359,9 +391,9 @@ function renderCard() {
       <div class="key-prompt">
         <div class="key-question">${esc(meta.question)}</div>
         <div class="typed-value" id="typed-display">_</div>
-        <div class="range-hint"><kbd>1</kbd>–<kbd>9</kbd> = 1–9 &nbsp;|&nbsp; <kbd>0</kbd> = 10</div>
+        <div class="range-hint"><kbd>0</kbd>–<kbd>5</kbd> = 0–5</div>
       </div>`;
-    hint.innerHTML = 'Press <kbd>1</kbd>–<kbd>9</kbd> for 1–9, or <kbd>0</kbd> for 10. <kbd>Backspace</kbd> clears.';
+    hint.innerHTML = 'Press <kbd>0</kbd>–<kbd>5</kbd> to commit instantly. <kbd>Backspace</kbd> clears.';
 
   } else {
     inputHTML = `
@@ -374,7 +406,7 @@ function renderCard() {
   }
 
   area.innerHTML = `
-    <div class="field-label fade-enter">${esc(meta.label)}</div>
+    <div class="field-label fade-enter ${esc(meta.labelClass || '')}">${esc(meta.label)}</div>
     <div class="card-text fade-enter">${esc(obj.text || '')}</div>
     ${tags ? `<div class="card-meta fade-enter">${tags}</div>` : ''}
     <div class="input-zone fade-enter">${inputHTML}</div>
@@ -451,17 +483,10 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && state.typed !== '') commitNumber(state.typed);
 
   } else if (meta.type === 'boldness') {
-    // "0" key → 10
-    if (digit === '0') {
-      const d = document.getElementById('typed-display');
-      if (d) d.textContent = '10';
-      setTimeout(() => commitNumber('10'), 160);
-      return;
-    }
-    // digits 1-9 commit instantly
+    // digits 0-5 commit instantly
     if (digit !== null) {
       const n = parseInt(digit);
-      if (n >= 1 && n <= 9) {
+      if (n >= 0 && n <= 5) {
         state.typed = digit;
         const d = document.getElementById('typed-display');
         if (d) d.textContent = state.typed;
@@ -491,7 +516,7 @@ document.getElementById('exit-btn').addEventListener('click', () => {
 });
 
 function serializeObj(obj) {
-  const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'pertinence', 'spice', 'boldness'];
+  const KEY_WRITE_ORDER = ['text', 'category', 'setting', 'time', 'boldness', 'pertinence', 'spice'];
   const allKeys = [
     ...KEY_WRITE_ORDER.filter(k => k in obj),
     ...Object.keys(obj).filter(k => !KEY_WRITE_ORDER.includes(k)),
